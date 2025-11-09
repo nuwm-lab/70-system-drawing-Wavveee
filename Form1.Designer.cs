@@ -12,7 +12,8 @@ namespace LabWork
             // 
             this.ClientSize = new System.Drawing.Size(800, 450);
             this.Name = "Form1";
-            this.Paint += new PaintEventHandler(this.Form1_Paint);
+            // Залишаємо підписку лише тут, прибираючи її з конструктора Form1.cs
+            this.Paint += new PaintEventHandler(this.Form1_Paint); 
             this.ResumeLayout(false);
         }
     }
