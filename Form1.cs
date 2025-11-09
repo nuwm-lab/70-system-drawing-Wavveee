@@ -26,18 +26,15 @@ namespace LabWork
             int width = this.ClientSize.Width;
             int height = this.ClientSize.Height;
 
-            // Межі області
+            // --- Початкові межі області згідно з завданням ---
             double xMin = 0.0;
-            double xMax = 2.0; // Збільшимо xMax для більш репрезентативного графіка
-            double dx = 0.01; // Зменшимо dx для більш гладкого графіка
+            double xMax = 0.5;
+            double step = 0.01; // Крок для гладкості графіка
 
             // Знаходимо min/max y для масштабування
             double yMin = double.MaxValue;
             double yMax = double.MinValue;
             
-            // Крок для обчислення функції
-            double step = 0.01;
-
             for (double x = xMin; x <= xMax; x += step)
             {
                 double y = (2.5 * Math.Pow(x, 3)) / (Math.Exp(2 * x) + 2);
@@ -46,8 +43,8 @@ namespace LabWork
             }
             
             // Додамо невеликий запас для Y-осі
-            double yMargin = (yMax - yMin) * 0.1;
-            yMin -= yMargin;
+            double yMargin = (yMax - yMin) * 0.15; // Трохи більший запас, бо графік починається з 0
+            yMin = 0.0; // Графік починається з (0, 0), тому yMin = 0
             yMax += yMargin;
 
             // Запас для осей (у пікселях)
@@ -66,45 +63,54 @@ namespace LabWork
             // --- Малювання сітки (Grid) та осей ---
             Pen gridPen = new Pen(Color.LightGray, 1) { DashStyle = DashStyle.Dot };
             Pen axisPen = new Pen(Color.Black, 2);
-            Font axisFont = new Font("Arial", 8);
+            Font axisFont = new Font("Arial", 9);
             
-            // Кроки для сітки
-            double xGridStep = (xMax - xMin) / 10.0;
-            double yGridStep = (yMax - yMin) / 10.0;
+            // Кроки для сітки: xGridStep = 0.1 відповідає вашому dx
+            double xGridStep = 0.1; 
+            double yGridStep = (yMax - yMin) / 5.0; // 5 основних горизонтальних ліній
+
+            // Місце для малювання осі X на екрані
+            float xAxisScreenY = (float)(height - padding - (0.0 - yMin) * scaleY);
 
             // Малювання вертикальних ліній сітки та міток X
             for (double x = xMin; x <= xMax; x += xGridStep)
             {
                 float screenX = (float)((x - xMin) * scaleX) + startX;
+                
+                // Сітка
                 g.DrawLine(gridPen, screenX, startY, screenX, startY + drawHeight);
                 
+                // Мітки X
                 string xLabel = x.ToString("F1");
                 SizeF labelSize = g.MeasureString(xLabel, axisFont);
-                g.DrawString(xLabel, axisFont, Brushes.Black, screenX - labelSize.Width / 2, startY + drawHeight + 5);
+                // Мітка X розміщується біля осі X
+                g.DrawString(xLabel, axisFont, Brushes.Black, screenX - labelSize.Width / 2, xAxisScreenY + 2);
             }
 
             // Малювання горизонтальних ліній сітки та міток Y
-            for (double y = yMin; y <= yMax; y += yGridStep)
+            for (double y = 0.0; y <= yMax; y += yGridStep) // Починаємо з y=0
             {
                 float screenY = (float)(height - padding - (y - yMin) * scaleY);
+                
+                // Сітка
                 g.DrawLine(gridPen, startX, screenY, startX + drawWidth, screenY);
                 
-                string yLabel = y.ToString("F2");
+                // Мітки Y
+                string yLabel = y.ToString("F3");
                 SizeF labelSize = g.MeasureString(yLabel, axisFont);
                 g.DrawString(yLabel, axisFont, Brushes.Black, startX - labelSize.Width - 5, screenY - labelSize.Height / 2);
             }
             
             // Малювання осей X та Y
-            // Вісь X: лінія внизу області малювання
-            g.DrawLine(axisPen, startX, startY + drawHeight, startX + drawWidth, startY + drawHeight); 
             // Вісь Y: лінія зліва області малювання
             g.DrawLine(axisPen, startX, startY, startX, startY + drawHeight); 
+            // Вісь X: лінія, що відповідає y=0
+            g.DrawLine(axisPen, startX, xAxisScreenY, startX + drawWidth, xAxisScreenY); 
 
-            // Додавання стрілок на осі (якщо потрібно, для простоти пропущено, але осі є)
-            // Мітки осей
-            g.DrawString("X", axisFont, Brushes.Black, startX + drawWidth - 10, startY + drawHeight + 5);
+            // Додавання міток осей
+            g.DrawString("X", axisFont, Brushes.Black, startX + drawWidth - 10, xAxisScreenY - 15);
             g.DrawString("Y", axisFont, Brushes.Black, startX - 15, startY - 15);
-
+            g.DrawString("0", axisFont, Brushes.Black, startX - 15, xAxisScreenY + 2); // Мітка початку координат
 
             // --- Малювання графіка функції ---
             Pen graphPen = new Pen(Color.Blue, 2);
@@ -116,6 +122,7 @@ namespace LabWork
 
                 // Перетворення координат з математичних у екранні
                 float screenX = (float)((x - xMin) * scaleX) + startX;
+                // screenY тепер відносно yMin=0
                 float screenY = (float)(height - padding - (y - yMin) * scaleY);
 
                 points.Add(new PointF(screenX, screenY));
@@ -124,7 +131,6 @@ namespace LabWork
             if (points.Count > 1)
                 g.DrawLines(graphPen, points.ToArray());
 
-            // Підпис заголовку (дублюється у конструкторі, але тут для впевненості)
             this.Text = "Графік: y = 2.5x^3 / (e^(2x) + 2)";
         }
     }
